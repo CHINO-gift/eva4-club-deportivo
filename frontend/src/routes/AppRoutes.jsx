@@ -13,6 +13,7 @@ import Users from '../pages/admin/Users'
 import Sports from '../pages/admin/Sports'
 import Rooms from '../pages/admin/Rooms'
 import SportRooms from '../pages/admin/SportRooms'
+import ClassSchedules from '../pages/admin/ClassSchedules'
 import Profile from '../pages/Profile'
 
 function Placeholder({ title, description }) {
@@ -43,10 +44,7 @@ function AppRoutes() {
             <Route path="sports" element={<Sports />} />
             <Route path="rooms" element={<Rooms />} />
             <Route path="sport-rooms" element={<SportRooms />} />
-            <Route
-              path="class-schedules"
-              element={<Placeholder title="Gestión de Horarios" description="Aquí se implementará la administración de horarios." />}
-            />
+            <Route path="class-schedules" element={<ClassSchedules />} />
             <Route path="profile" element={<Profile />} />
           </Route>
         </Route>
