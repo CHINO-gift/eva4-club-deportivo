@@ -9,6 +9,8 @@ import UserLayout from '../layouts/UserLayout'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import CoachDashboard from '../pages/coach/CoachDashboard'
 import UserDashboard from '../pages/user/UserDashboard'
+import Users from '../pages/admin/Users'
+import Sports from '../pages/admin/Sports'
 import Profile from '../pages/Profile'
 
 function Placeholder({ title, description }) {
@@ -35,14 +37,8 @@ function AppRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
-            <Route
-              path="users"
-              element={<Placeholder title="Gestión de Usuarios" description="Aquí se implementará el CRUD de usuarios." />}
-            />
-            <Route
-              path="sports"
-              element={<Placeholder title="Gestión de Deportes" description="Aquí se implementará el CRUD de deportes." />}
-            />
+            <Route path="users" element={<Users />} />
+            <Route path="sports" element={<Sports />} />
             <Route
               path="rooms"
               element={<Placeholder title="Gestión de Salas" description="Aquí se implementará el flujo de salas." />}
