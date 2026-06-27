@@ -16,19 +16,9 @@ import SportRooms from '../pages/admin/SportRooms'
 import ClassSchedules from '../pages/admin/ClassSchedules'
 import MyClasses from '../pages/coach/MyClasses'
 import MySchedule from '../pages/coach/MySchedule'
+import AvailableClasses from '../pages/user/AvailableClasses'
+import MyReservations from '../pages/user/MyReservations'
 import Profile from '../pages/Profile'
-
-function Placeholder({ title, description }) {
-  return (
-    <section className="content-card">
-      <div className="section-header">
-        <span className="section-kicker">Próximo avance</span>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-    </section>
-  )
-}
 
 function AppRoutes() {
   return (
@@ -63,14 +53,8 @@ function AppRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['user']} />}>
           <Route path="/user" element={<UserLayout />}>
             <Route index element={<UserDashboard />} />
-            <Route
-              path="classes"
-              element={<Placeholder title="Clases Disponibles" description="Aquí el usuario podrá revisar y reservar clases." />}
-            />
-            <Route
-              path="reservations"
-              element={<Placeholder title="Mis Reservas" description="Aquí el usuario podrá revisar y cancelar reservas." />}
-            />
+            <Route path="classes" element={<AvailableClasses />} />
+            <Route path="reservations" element={<MyReservations />} />
             <Route path="profile" element={<Profile />} />
           </Route>
         </Route>
