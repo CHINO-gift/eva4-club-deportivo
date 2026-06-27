@@ -21,6 +21,16 @@ function Rooms() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const showError = (error, fallbackMessage) => {
+    Swal.fire({
+      title: 'Error',
+      text: error.response?.data?.message || fallbackMessage,
+      icon: 'error',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#4f46e5'
+    })
+  }
+
   const loadRooms = async () => {
     setLoading(true)
     setError('')
@@ -60,7 +70,7 @@ function Rooms() {
     setFormData({
       name: room.name || '',
       description: room.description || '',
-      capacity: room.capacity || '',
+      capacity: room.capacity ? String(room.capacity) : '',
       location: room.location || '',
       observation: room.observation || '',
       image_url: room.image_url || '',
@@ -68,6 +78,7 @@ function Rooms() {
     })
     setShowForm(true)
     setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const closeForm = () => {
@@ -78,18 +89,60 @@ function Rooms() {
 
   const buildPayload = () => {
     return {
-      name: formData.name,
-      description: formData.description,
+      name: formData.name.trim(),
+      description: formData.description.trim(),
       capacity: Number(formData.capacity),
-      location: formData.location,
-      observation: formData.observation,
-      image_url: formData.image_url,
+      location: formData.location.trim() || null,
+      observation: formData.observation.trim() || null,
+      image_url: formData.image_url.trim() || null,
       status: formData.status
     }
   }
 
+  const validateForm = () => {
+    if (formData.name.trim().length < 3) {
+      Swal.fire({
+        title: 'Nombre inválido',
+        text: 'El nombre de la sala debe tener al menos 3 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.description.trim().length < 5) {
+      Swal.fire({
+        title: 'Descripción inválida',
+        text: 'La descripción debe tener al menos 5 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (!formData.capacity || Number(formData.capacity) < 1) {
+      Swal.fire({
+        title: 'Capacidad inválida',
+        text: 'La capacidad debe ser mayor a 0.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
     setSaving(true)
     setError('')
 
@@ -121,13 +174,7 @@ function Rooms() {
       closeForm()
       await loadRooms()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo guardar la sala',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo guardar la sala')
     } finally {
       setSaving(false)
     }
@@ -164,13 +211,7 @@ function Rooms() {
 
       await loadRooms()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo eliminar la sala',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo eliminar la sala')
     }
   }
 
@@ -198,9 +239,9 @@ function Rooms() {
       name: room.name,
       description: room.description,
       capacity: Number(room.capacity),
-      location: room.location,
-      observation: room.observation,
-      image_url: room.image_url,
+      location: room.location || null,
+      observation: room.observation || null,
+      image_url: room.image_url || null,
       status: !room.status
     }
 
@@ -217,13 +258,7 @@ function Rooms() {
 
       await loadRooms()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo actualizar el estado',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo actualizar el estado')
     }
   }
 
@@ -256,7 +291,7 @@ function Rooms() {
             </button>
           </div>
 
-          <form className="grid-form" onSubmit={handleSubmit}>
+          <form className="grid-form" onSubmit={handleSubmit} noValidate>
             <div>
               <label className="form-label">Nombre de la sala</label>
               <input
@@ -293,19 +328,18 @@ function Rooms() {
                 value={formData.location}
                 onChange={handleChange}
                 placeholder="Ej: Primer piso"
-                required
               />
             </div>
 
             <div>
               <label className="form-label">URL de imagen</label>
               <input
-                type="url"
+                type="text"
                 name="image_url"
                 className="form-control custom-input"
                 value={formData.image_url}
                 onChange={handleChange}
-                placeholder="https://imagen.com/sala.jpg"
+                placeholder="Puedes dejarlo vacío"
               />
             </div>
 
@@ -349,8 +383,8 @@ function Rooms() {
                 Cancelar
               </button>
 
-              <button className="btn btn-brand" disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar sala'}
+              <button type="submit" className="btn btn-brand" disabled={saving}>
+                {saving ? 'Guardando...' : editingRoom ? 'Actualizar sala' : 'Guardar sala'}
               </button>
             </div>
           </form>
