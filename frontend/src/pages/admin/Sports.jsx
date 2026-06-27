@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 import api from '../../api/api'
 
 const emptyForm = {
@@ -15,7 +16,6 @@ function Sports() {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
   const loadSports = async () => {
@@ -49,7 +49,6 @@ function Sports() {
     setEditingSport(null)
     setFormData(emptyForm)
     setShowForm(true)
-    setMessage('')
     setError('')
   }
 
@@ -62,7 +61,6 @@ function Sports() {
       status: Boolean(sport.status)
     })
     setShowForm(true)
-    setMessage('')
     setError('')
   }
 
@@ -75,7 +73,6 @@ function Sports() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
-    setMessage('')
     setError('')
 
     const payload = {
@@ -88,53 +85,129 @@ function Sports() {
     try {
       if (editingSport) {
         await api.put(`/sports/${editingSport.id}`, payload)
-        setMessage('Deporte actualizado correctamente')
+
+        await Swal.fire({
+          title: 'Deporte actualizado',
+          text: 'Los datos del deporte fueron guardados correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#4f46e5'
+        })
       } else {
         await api.post('/sports', payload)
-        setMessage('Deporte creado correctamente')
+
+        await Swal.fire({
+          title: 'Deporte creado',
+          text: 'El deporte fue registrado correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#4f46e5'
+        })
       }
 
       closeForm()
       await loadSports()
     } catch (error) {
-      setError(error.response?.data?.message || 'No se pudo guardar el deporte')
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'No se pudo guardar el deporte',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (sport) => {
-    const confirmDelete = window.confirm(`¿Seguro que quieres eliminar el deporte ${sport.name}?`)
+    const result = await Swal.fire({
+      title: '¿Eliminar deporte?',
+      text: `Se eliminará ${sport.name}. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d'
+    })
 
-    if (!confirmDelete) {
+    if (!result.isConfirmed) {
       return
     }
 
-    setMessage('')
     setError('')
 
     try {
       await api.delete(`/sports/${sport.id}`)
-      setMessage('Deporte eliminado correctamente')
+
+      await Swal.fire({
+        title: 'Deporte eliminado',
+        text: 'El deporte fue eliminado correctamente.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+
       await loadSports()
     } catch (error) {
-      setError(error.response?.data?.message || 'No se pudo eliminar el deporte')
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'No se pudo eliminar el deporte',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
     }
   }
 
   const handleToggleStatus = async (sport) => {
-    setMessage('')
+    const result = await Swal.fire({
+      title: sport.status ? '¿Desactivar deporte?' : '¿Activar deporte?',
+      text: sport.status
+        ? `El deporte ${sport.name} quedará inactivo.`
+        : `El deporte ${sport.name} volverá a estar activo.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: sport.status ? 'Sí, desactivar' : 'Sí, activar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#6c757d'
+    })
+
+    if (!result.isConfirmed) {
+      return
+    }
+
     setError('')
 
+    const payload = {
+      name: sport.name,
+      objective: sport.objective,
+      duration: Number(sport.duration),
+      status: !sport.status
+    }
+
     try {
-      await api.patch(`/sports/${sport.id}/status`, {
-        status: !sport.status
+      await api.put(`/sports/${sport.id}`, payload)
+
+      await Swal.fire({
+        title: 'Estado actualizado',
+        text: 'El estado del deporte fue actualizado correctamente.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
       })
 
-      setMessage('Estado del deporte actualizado correctamente')
       await loadSports()
     } catch (error) {
-      setError(error.response?.data?.message || 'No se pudo actualizar el estado')
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'No se pudo actualizar el estado',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
     }
   }
 
@@ -152,7 +225,6 @@ function Sports() {
         </button>
       </div>
 
-      {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
       {showForm && (

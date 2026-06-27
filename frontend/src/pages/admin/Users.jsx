@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 import api from '../../api/api'
 
 const emptyForm = {
@@ -17,7 +18,6 @@ function Users() {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
   const loadUsers = async () => {
@@ -51,7 +51,6 @@ function Users() {
     setEditingUser(null)
     setFormData(emptyForm)
     setShowForm(true)
-    setMessage('')
     setError('')
   }
 
@@ -66,7 +65,6 @@ function Users() {
       must_change_password: Boolean(user.must_change_password)
     })
     setShowForm(true)
-    setMessage('')
     setError('')
   }
 
@@ -79,7 +77,6 @@ function Users() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
-    setMessage('')
     setError('')
 
     const payload = {
@@ -100,40 +97,82 @@ function Users() {
     try {
       if (editingUser) {
         await api.put(`/users/${editingUser.id}`, payload)
-        setMessage('Usuario actualizado correctamente')
+
+        await Swal.fire({
+          title: 'Usuario actualizado',
+          text: 'Los datos del usuario fueron guardados correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#4f46e5'
+        })
       } else {
         await api.post('/users', {
           ...payload,
           password: formData.password
         })
-        setMessage('Usuario creado correctamente')
+
+        await Swal.fire({
+          title: 'Usuario creado',
+          text: 'El usuario fue registrado correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#4f46e5'
+        })
       }
 
       closeForm()
       await loadUsers()
     } catch (error) {
-      setError(error.response?.data?.message || 'No se pudo guardar el usuario')
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'No se pudo guardar el usuario',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (user) => {
-    const confirmDelete = window.confirm(`¿Seguro que quieres eliminar a ${user.full_name}?`)
+    const result = await Swal.fire({
+      title: '¿Eliminar usuario?',
+      text: `Se eliminará a ${user.full_name}. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d'
+    })
 
-    if (!confirmDelete) {
+    if (!result.isConfirmed) {
       return
     }
 
-    setMessage('')
     setError('')
 
     try {
       await api.delete(`/users/${user.id}`)
-      setMessage('Usuario eliminado correctamente')
+
+      await Swal.fire({
+        title: 'Usuario eliminado',
+        text: 'El usuario fue eliminado correctamente.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+
       await loadUsers()
     } catch (error) {
-      setError(error.response?.data?.message || 'No se pudo eliminar el usuario')
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'No se pudo eliminar el usuario',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
     }
   }
 
@@ -151,7 +190,6 @@ function Users() {
         </button>
       </div>
 
-      {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
       {showForm && (
