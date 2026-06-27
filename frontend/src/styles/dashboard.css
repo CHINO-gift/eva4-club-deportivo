@@ -832,4 +832,131 @@ a {
   .duration-box {
     width: 100%;
   }
+}.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.room-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.05);
+}
+
+.room-image {
+  height: 190px;
+  background-color: #eef2ff;
+  overflow: hidden;
+}
+
+.room-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.room-image-placeholder {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top right, rgba(79, 70, 229, 0.28), transparent 30%),
+    linear-gradient(135deg, #101828, #1e1b4b);
+  color: #ffffff;
+}
+
+.room-image-placeholder span {
+  width: 70px;
+  height: 70px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--brand), var(--accent));
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.room-body {
+  padding: 22px;
+}
+
+.room-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.room-title-row h2 {
+  font-size: 24px;
+  font-weight: 900;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.room-body p {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.capacity-chip {
+  min-width: 92px;
+  text-align: center;
+  padding: 12px;
+  border-radius: 16px;
+  background-color: var(--brand-soft);
+  color: var(--brand);
+}
+
+.capacity-chip strong {
+  display: block;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.capacity-chip span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.room-meta {
+  display: grid;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background-color: #f8fafc;
+}
+
+.room-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 980px) {
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .room-title-row {
+    flex-direction: column;
+  }
+
+  .capacity-chip {
+    width: 100%;
+  }
+
+  .room-actions {
+    justify-content: flex-start;
+  }
 }
