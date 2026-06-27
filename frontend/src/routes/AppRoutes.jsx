@@ -14,6 +14,8 @@ import Sports from '../pages/admin/Sports'
 import Rooms from '../pages/admin/Rooms'
 import SportRooms from '../pages/admin/SportRooms'
 import ClassSchedules from '../pages/admin/ClassSchedules'
+import MyClasses from '../pages/coach/MyClasses'
+import MySchedule from '../pages/coach/MySchedule'
 import Profile from '../pages/Profile'
 
 function Placeholder({ title, description }) {
@@ -52,14 +54,8 @@ function AppRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
           <Route path="/coach" element={<CoachLayout />}>
             <Route index element={<CoachDashboard />} />
-            <Route
-              path="my-classes"
-              element={<Placeholder title="Mis Clases" description="Aquí el coach visualizará sus clases asignadas." />}
-            />
-            <Route
-              path="my-schedule"
-              element={<Placeholder title="Mi Horario" description="Aquí el coach visualizará sus horarios." />}
-            />
+            <Route path="my-classes" element={<MyClasses />} />
+            <Route path="my-schedule" element={<MySchedule />} />
             <Route path="profile" element={<Profile />} />
           </Route>
         </Route>

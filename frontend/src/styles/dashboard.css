@@ -1176,3 +1176,227 @@ a {
     justify-content: flex-start;
   }
 }
+.coach-classes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.coach-class-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  padding: 22px;
+  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.05);
+}
+
+.coach-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.coach-class-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.coach-class-main span,
+.coach-room-box span,
+.small-title {
+  display: block;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.coach-class-main h2 {
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.coach-class-main p {
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+.coach-class-duration {
+  min-width: 88px;
+  text-align: center;
+  padding: 14px;
+  border-radius: 18px;
+  background-color: var(--brand-soft);
+  color: var(--brand);
+}
+
+.coach-class-duration strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.coach-class-duration span {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.coach-room-box {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background-color: #f8fafc;
+  border: 1px solid var(--border);
+}
+
+.coach-room-box strong {
+  display: block;
+  font-size: 20px;
+}
+
+.coach-room-box p {
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+.coach-schedules-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.coach-schedule-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background-color: var(--brand-soft);
+}
+
+.coach-schedule-row strong {
+  color: var(--text-main);
+}
+
+.coach-schedule-row span {
+  color: var(--brand);
+  font-weight: 900;
+}
+
+.empty-mini {
+  color: var(--text-muted);
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.weekly-schedule {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 14px;
+}
+
+.day-column {
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 16px;
+  min-height: 240px;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-header span {
+  font-weight: 900;
+}
+
+.day-header strong {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background-color: var(--brand-soft);
+  color: var(--brand);
+  font-size: 13px;
+}
+
+.day-classes {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.day-class-card {
+  padding: 12px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at top right, rgba(79, 70, 229, 0.13), transparent 34%),
+    #f8fafc;
+  border: 1px solid var(--border);
+}
+
+.day-class-card span {
+  display: block;
+  color: var(--brand);
+  font-weight: 900;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.day-class-card strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.day-class-card p {
+  color: var(--text-muted);
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+@media (max-width: 1300px) {
+  .weekly-schedule {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .coach-classes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-schedule {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .coach-class-main {
+    flex-direction: column;
+  }
+
+  .coach-class-duration {
+    width: 100%;
+  }
+
+  .coach-schedule-row {
+    flex-direction: column;
+  }
+
+  .weekly-schedule {
+    grid-template-columns: 1fr;
+  }
+}
