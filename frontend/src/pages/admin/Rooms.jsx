@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Modal } from 'react-bootstrap'
 import Swal from 'sweetalert2'
 import api from '../../api/api'
 
@@ -78,10 +79,19 @@ function Rooms() {
     })
     setShowForm(true)
     setError('')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const closeForm = () => {
+    if (saving) {
+      return
+    }
+
+    setShowForm(false)
+    setEditingRoom(null)
+    setFormData(emptyForm)
+  }
+
+  const resetForm = () => {
     setShowForm(false)
     setEditingRoom(null)
     setFormData(emptyForm)
@@ -171,7 +181,7 @@ function Rooms() {
         })
       }
 
-      closeForm()
+      resetForm()
       await loadRooms()
     } catch (error) {
       showError(error, 'No se pudo guardar la sala')
@@ -278,119 +288,6 @@ function Rooms() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {showForm && (
-        <div className="form-panel">
-          <div className="form-panel-header">
-            <div>
-              <h2>{editingRoom ? 'Editar sala' : 'Crear sala'}</h2>
-              <p>{editingRoom ? 'Modifica los datos de la sala seleccionada.' : 'Completa los datos para registrar un nuevo espacio deportivo.'}</p>
-            </div>
-
-            <button className="btn btn-outline-secondary" onClick={closeForm}>
-              Cerrar
-            </button>
-          </div>
-
-          <form className="grid-form" onSubmit={handleSubmit} noValidate>
-            <div>
-              <label className="form-label">Nombre de la sala</label>
-              <input
-                type="text"
-                name="name"
-                className="form-control custom-input"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Ej: Sala Funcional"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Capacidad</label>
-              <input
-                type="number"
-                name="capacity"
-                className="form-control custom-input"
-                value={formData.capacity}
-                onChange={handleChange}
-                min="1"
-                placeholder="Ej: 25"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Ubicación</label>
-              <input
-                type="text"
-                name="location"
-                className="form-control custom-input"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Ej: Primer piso"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">URL de imagen</label>
-              <input
-                type="text"
-                name="image_url"
-                className="form-control custom-input"
-                value={formData.image_url}
-                onChange={handleChange}
-                placeholder="Puedes dejarlo vacío"
-              />
-            </div>
-
-            <div className="full-field">
-              <label className="form-label">Descripción</label>
-              <textarea
-                name="description"
-                className="form-control custom-input"
-                value={formData.description}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Describe el uso principal de la sala"
-                required
-              />
-            </div>
-
-            <div className="full-field">
-              <label className="form-label">Observación</label>
-              <textarea
-                name="observation"
-                className="form-control custom-input"
-                value={formData.observation}
-                onChange={handleChange}
-                rows="2"
-                placeholder="Ej: Cuenta con colchonetas, pesas o implementación especial"
-              />
-            </div>
-
-            <label className="check-card">
-              <input
-                type="checkbox"
-                name="status"
-                checked={formData.status}
-                onChange={handleChange}
-              />
-              <span>Sala activa</span>
-            </label>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-outline-secondary" onClick={closeForm}>
-                Cancelar
-              </button>
-
-              <button type="submit" className="btn btn-brand" disabled={saving}>
-                {saving ? 'Guardando...' : editingRoom ? 'Actualizar sala' : 'Guardar sala'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
       <div className="rooms-grid">
         {loading ? (
           <p className="empty-text">Cargando salas...</p>
@@ -450,6 +347,120 @@ function Rooms() {
           ))
         )}
       </div>
+
+      <Modal show={showForm} onHide={closeForm} centered size="xl" backdrop="static">
+        <Modal.Header closeButton={!saving}>
+          <Modal.Title>{editingRoom ? 'Editar sala' : 'Crear sala'}</Modal.Title>
+        </Modal.Header>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <Modal.Body>
+            <p className="modal-helper-text">
+              {editingRoom
+                ? 'Modifica los datos de la sala seleccionada.'
+                : 'Completa los datos para registrar un nuevo espacio deportivo.'}
+            </p>
+
+            <div className="grid-form">
+              <div>
+                <label className="form-label">Nombre de la sala</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-control custom-input"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Ej: Sala Funcional"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Capacidad</label>
+                <input
+                  type="number"
+                  name="capacity"
+                  className="form-control custom-input"
+                  value={formData.capacity}
+                  onChange={handleChange}
+                  min="1"
+                  placeholder="Ej: 25"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Ubicación</label>
+                <input
+                  type="text"
+                  name="location"
+                  className="form-control custom-input"
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="Ej: Primer piso"
+                />
+              </div>
+
+              <div>
+                <label className="form-label">URL de imagen</label>
+                <input
+                  type="text"
+                  name="image_url"
+                  className="form-control custom-input"
+                  value={formData.image_url}
+                  onChange={handleChange}
+                  placeholder="Puedes dejarlo vacío"
+                />
+              </div>
+
+              <div className="full-field">
+                <label className="form-label">Descripción</label>
+                <textarea
+                  name="description"
+                  className="form-control custom-input"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Describe el uso principal de la sala"
+                  required
+                />
+              </div>
+
+              <div className="full-field">
+                <label className="form-label">Observación</label>
+                <textarea
+                  name="observation"
+                  className="form-control custom-input"
+                  value={formData.observation}
+                  onChange={handleChange}
+                  rows="2"
+                  placeholder="Ej: Cuenta con colchonetas, pesas o implementación especial"
+                />
+              </div>
+
+              <label className="check-card">
+                <input
+                  type="checkbox"
+                  name="status"
+                  checked={formData.status}
+                  onChange={handleChange}
+                />
+                <span>Sala activa</span>
+              </label>
+            </div>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <button type="button" className="btn btn-outline-secondary" onClick={closeForm} disabled={saving}>
+              Cancelar
+            </button>
+
+            <button type="submit" className="btn btn-brand" disabled={saving}>
+              {saving ? 'Guardando...' : editingRoom ? 'Actualizar sala' : 'Guardar sala'}
+            </button>
+          </Modal.Footer>
+        </form>
+      </Modal>
     </section>
   )
 }

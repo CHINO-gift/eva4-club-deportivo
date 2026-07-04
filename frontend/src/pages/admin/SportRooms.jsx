@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Modal } from 'react-bootstrap'
 import Swal from 'sweetalert2'
 import api from '../../api/api'
 
@@ -49,7 +50,7 @@ function SportRooms() {
       ])
 
       const allUsers = getData(usersResponse)
-      const coachUsers = allUsers.filter((user) => user.role === 'coach')
+      const coachUsers = allUsers.filter((user) => user.role?.toLowerCase() === 'coach')
 
       setAssignments(getData(assignmentsResponse))
       setSports(getData(sportsResponse))
@@ -93,10 +94,19 @@ function SportRooms() {
     })
     setShowForm(true)
     setError('')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const closeForm = () => {
+    if (saving) {
+      return
+    }
+
+    setShowForm(false)
+    setEditingAssignment(null)
+    setFormData(emptyForm)
+  }
+
+  const resetForm = () => {
     setShowForm(false)
     setEditingAssignment(null)
     setFormData(emptyForm)
@@ -195,7 +205,7 @@ function SportRooms() {
         })
       }
 
-      closeForm()
+      resetForm()
       await loadInitialData()
     } catch (error) {
       showError(error, 'No se pudo guardar la asignación')
@@ -304,110 +314,6 @@ function SportRooms() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {showForm && (
-        <div className="form-panel">
-          <div className="form-panel-header">
-            <div>
-              <h2>{editingAssignment ? 'Editar asignación' : 'Crear asignación'}</h2>
-              <p>
-                {editingAssignment
-                  ? 'Modifica la relación entre deporte, sala y coach.'
-                  : 'Selecciona el deporte, la sala y el coach para crear una nueva asignación.'}
-              </p>
-            </div>
-
-            <button className="btn btn-outline-secondary" onClick={closeForm}>
-              Cerrar
-            </button>
-          </div>
-
-          <form className="grid-form" onSubmit={handleSubmit} noValidate>
-            <div>
-              <label className="form-label">Deporte</label>
-              <select
-                name="sport_id"
-                className="form-select custom-input"
-                value={formData.sport_id}
-                onChange={handleChange}
-              >
-                <option value="">Selecciona un deporte</option>
-                {sports.map((sport) => (
-                  <option key={sport.id} value={sport.id}>
-                    {sport.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label">Sala</label>
-              <select
-                name="room_id"
-                className="form-select custom-input"
-                value={formData.room_id}
-                onChange={handleChange}
-              >
-                <option value="">Selecciona una sala</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.name} - {room.location || 'Sin ubicación'}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label">Coach</label>
-              <select
-                name="coach_id"
-                className="form-select custom-input"
-                value={formData.coach_id}
-                onChange={handleChange}
-              >
-                <option value="">Selecciona un coach</option>
-                {coaches.map((coach) => (
-                  <option key={coach.id} value={coach.id}>
-                    {coach.full_name} - {coach.email}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <label className="check-card">
-              <input
-                type="checkbox"
-                name="status"
-                checked={formData.status}
-                onChange={handleChange}
-              />
-              <span>Asignación activa</span>
-            </label>
-
-            <div className="full-field">
-              <label className="form-label">Observación</label>
-              <textarea
-                name="observation"
-                className="form-control custom-input"
-                value={formData.observation}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Ej: Asignación para clases grupales de la tarde"
-              />
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-outline-secondary" onClick={closeForm}>
-                Cancelar
-              </button>
-
-              <button type="submit" className="btn btn-brand" disabled={saving}>
-                {saving ? 'Guardando...' : editingAssignment ? 'Actualizar asignación' : 'Guardar asignación'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
       <div className="assignments-grid">
         {loading ? (
           <p className="empty-text">Cargando asignaciones...</p>
@@ -480,6 +386,107 @@ function SportRooms() {
           ))
         )}
       </div>
+
+      <Modal show={showForm} onHide={closeForm} centered size="xl" backdrop="static">
+        <Modal.Header closeButton={!saving}>
+          <Modal.Title>{editingAssignment ? 'Editar asignación' : 'Crear asignación'}</Modal.Title>
+        </Modal.Header>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <Modal.Body>
+            <p className="modal-helper-text">
+              {editingAssignment
+                ? 'Modifica la relación entre deporte, sala y coach.'
+                : 'Selecciona el deporte, la sala y el coach para crear una nueva asignación.'}
+            </p>
+
+            <div className="grid-form">
+              <div>
+                <label className="form-label">Deporte</label>
+                <select
+                  name="sport_id"
+                  className="form-select custom-input"
+                  value={formData.sport_id}
+                  onChange={handleChange}
+                >
+                  <option value="">Selecciona un deporte</option>
+                  {sports.map((sport) => (
+                    <option key={sport.id} value={sport.id}>
+                      {sport.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label">Sala</label>
+                <select
+                  name="room_id"
+                  className="form-select custom-input"
+                  value={formData.room_id}
+                  onChange={handleChange}
+                >
+                  <option value="">Selecciona una sala</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name} - {room.location || 'Sin ubicación'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label">Coach</label>
+                <select
+                  name="coach_id"
+                  className="form-select custom-input"
+                  value={formData.coach_id}
+                  onChange={handleChange}
+                >
+                  <option value="">Selecciona un coach</option>
+                  {coaches.map((coach) => (
+                    <option key={coach.id} value={coach.id}>
+                      {coach.full_name} - {coach.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <label className="check-card">
+                <input
+                  type="checkbox"
+                  name="status"
+                  checked={formData.status}
+                  onChange={handleChange}
+                />
+                <span>Asignación activa</span>
+              </label>
+
+              <div className="full-field">
+                <label className="form-label">Observación</label>
+                <textarea
+                  name="observation"
+                  className="form-control custom-input"
+                  value={formData.observation}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Ej: Asignación para clases grupales de la tarde"
+                />
+              </div>
+            </div>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <button type="button" className="btn btn-outline-secondary" onClick={closeForm} disabled={saving}>
+              Cancelar
+            </button>
+
+            <button type="submit" className="btn btn-brand" disabled={saving}>
+              {saving ? 'Guardando...' : editingAssignment ? 'Actualizar asignación' : 'Guardar asignación'}
+            </button>
+          </Modal.Footer>
+        </form>
+      </Modal>
     </section>
   )
 }
