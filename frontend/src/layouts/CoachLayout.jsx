@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import logoImage from '../assets/logo.png'
+import coachImage from '../assets/coach.png'
 
 function CoachLayout() {
   const navigate = useNavigate()
@@ -13,10 +15,14 @@ function CoachLayout() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="brand-icon">CD</div>
+        <div className="sidebar-logo-box">
+          <img src={logoImage} alt="SportClub" />
+        </div>
+
+        <div className="sidebar-user-card">
+          <img src={coachImage} alt="Coach" />
           <div>
-            <strong>Club Deportivo</strong>
+            <strong>{user?.full_name}</strong>
             <span>Coach</span>
           </div>
         </div>
@@ -40,9 +46,12 @@ function CoachLayout() {
             <h2>Clases y planificación</h2>
           </div>
 
-          <div className="user-chip">
-            <span>{user?.full_name}</span>
-            <strong>{user?.role}</strong>
+          <div className="topbar-profile">
+            <img src={coachImage} alt="Coach" />
+            <div>
+              <span>{user?.full_name}</span>
+              <strong>{user?.role}</strong>
+            </div>
           </div>
         </header>
 

@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import logoImage from '../assets/logo.png'
+import adminImage from '../assets/admin.png'
 
 function AdminLayout() {
   const navigate = useNavigate()
@@ -13,10 +15,14 @@ function AdminLayout() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="brand-icon">CD</div>
+        <div className="sidebar-logo-box">
+          <img src={logoImage} alt="SportClub" />
+        </div>
+
+        <div className="sidebar-user-card">
+          <img src={adminImage} alt="Administrador" />
           <div>
-            <strong>Club Deportivo</strong>
+            <strong>{user?.full_name}</strong>
             <span>Administrador</span>
           </div>
         </div>
@@ -43,9 +49,12 @@ function AdminLayout() {
             <h2>Gestión general del club</h2>
           </div>
 
-          <div className="user-chip">
-            <span>{user?.full_name}</span>
-            <strong>{user?.role}</strong>
+          <div className="topbar-profile">
+            <img src={adminImage} alt="Administrador" />
+            <div>
+              <span>{user?.full_name}</span>
+              <strong>{user?.role}</strong>
+            </div>
           </div>
         </header>
 

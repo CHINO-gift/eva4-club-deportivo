@@ -1,8 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import adminImage from '../assets/admin.png'
+import coachImage from '../assets/coach.png'
+import userImage from '../assets/usuario.png'
+import defaultImage from '../assets/perfil.png'
 
 function Profile() {
   const { user, updateProfile } = useAuth()
+
+  const profileImage = useMemo(() => {
+    if (user?.role === 'admin') {
+      return adminImage
+    }
+
+    if (user?.role === 'coach') {
+      return coachImage
+    }
+
+    if (user?.role === 'user') {
+      return userImage
+    }
+
+    return defaultImage
+  }, [user])
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -56,17 +76,27 @@ function Profile() {
   }
 
   return (
-    <section className="content-card">
-      <div className="section-header">
-        <span className="section-kicker">Cuenta personal</span>
-        <h1>Mi Perfil</h1>
-        <p>Revisa y actualiza tus datos principales del sistema.</p>
+    <section className="profile-page-card">
+      <div className="profile-banner">
+        <div>
+          <span className="section-kicker">Cuenta personal</span>
+          <h1>Mi Perfil</h1>
+          <p>Revisa y actualiza tus datos principales del sistema.</p>
+        </div>
+
+        <div className="profile-avatar-card">
+          <img src={profileImage} alt="Perfil" />
+          <div>
+            <strong>{user?.full_name}</strong>
+            <span>{user?.role}</span>
+          </div>
+        </div>
       </div>
 
       {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <form className="profile-form" onSubmit={handleSubmit}>
+      <form className="profile-form improved-profile-form" onSubmit={handleSubmit}>
         <div>
           <label className="form-label">Nombre completo</label>
           <input

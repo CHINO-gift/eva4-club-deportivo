@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import logoImage from '../assets/logo.png'
+import userImage from '../assets/usuario.png'
 
 function UserLayout() {
   const navigate = useNavigate()
@@ -13,10 +15,14 @@ function UserLayout() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="brand-icon">CD</div>
+        <div className="sidebar-logo-box">
+          <img src={logoImage} alt="SportClub" />
+        </div>
+
+        <div className="sidebar-user-card">
+          <img src={userImage} alt="Usuario" />
           <div>
-            <strong>Club Deportivo</strong>
+            <strong>{user?.full_name}</strong>
             <span>Usuario</span>
           </div>
         </div>
@@ -40,9 +46,12 @@ function UserLayout() {
             <h2>Reservas y clases disponibles</h2>
           </div>
 
-          <div className="user-chip">
-            <span>{user?.full_name}</span>
-            <strong>{user?.role}</strong>
+          <div className="topbar-profile">
+            <img src={userImage} alt="Usuario" />
+            <div>
+              <span>{user?.full_name}</span>
+              <strong>{user?.role}</strong>
+            </div>
           </div>
         </header>
 
