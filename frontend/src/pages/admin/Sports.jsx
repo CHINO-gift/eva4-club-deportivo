@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Modal } from 'react-bootstrap'
 import Swal from 'sweetalert2'
 import api from '../../api/api'
 
@@ -17,6 +18,16 @@ function Sports() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const showError = (error, fallbackMessage) => {
+    Swal.fire({
+      title: 'Error',
+      text: error.response?.data?.message || fallbackMessage,
+      icon: 'error',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#4f46e5'
+    })
+  }
 
   const loadSports = async () => {
     setLoading(true)
@@ -57,7 +68,7 @@ function Sports() {
     setFormData({
       name: sport.name || '',
       objective: sport.objective || '',
-      duration: sport.duration || '',
+      duration: sport.duration ? String(sport.duration) : '',
       status: Boolean(sport.status)
     })
     setShowForm(true)
@@ -65,19 +76,65 @@ function Sports() {
   }
 
   const closeForm = () => {
+    if (saving) {
+      return
+    }
+
     setShowForm(false)
     setEditingSport(null)
     setFormData(emptyForm)
   }
 
+  const validateForm = () => {
+    if (formData.name.trim().length < 3) {
+      Swal.fire({
+        title: 'Nombre inválido',
+        text: 'El nombre del deporte debe tener al menos 3 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.objective.trim().length < 5) {
+      Swal.fire({
+        title: 'Objetivo inválido',
+        text: 'El objetivo debe tener al menos 5 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (!formData.duration || Number(formData.duration) < 1) {
+      Swal.fire({
+        title: 'Duración inválida',
+        text: 'La duración debe ser mayor a 0 minutos.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
     setSaving(true)
     setError('')
 
     const payload = {
-      name: formData.name,
-      objective: formData.objective,
+      name: formData.name.trim(),
+      objective: formData.objective.trim(),
       duration: Number(formData.duration),
       status: formData.status
     }
@@ -108,13 +165,7 @@ function Sports() {
       closeForm()
       await loadSports()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo guardar el deporte',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo guardar el deporte')
     } finally {
       setSaving(false)
     }
@@ -151,13 +202,7 @@ function Sports() {
 
       await loadSports()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo eliminar el deporte',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo eliminar el deporte')
     }
   }
 
@@ -201,13 +246,7 @@ function Sports() {
 
       await loadSports()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo actualizar el estado',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo actualizar el estado')
     }
   }
 
@@ -226,83 +265,6 @@ function Sports() {
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
-
-      {showForm && (
-        <div className="form-panel">
-          <div className="form-panel-header">
-            <div>
-              <h2>{editingSport ? 'Editar deporte' : 'Crear deporte'}</h2>
-              <p>{editingSport ? 'Modifica la información del deporte seleccionado.' : 'Completa los datos para agregar una nueva disciplina.'}</p>
-            </div>
-
-            <button className="btn btn-outline-secondary" onClick={closeForm}>
-              Cerrar
-            </button>
-          </div>
-
-          <form className="grid-form" onSubmit={handleSubmit}>
-            <div>
-              <label className="form-label">Nombre del deporte</label>
-              <input
-                type="text"
-                name="name"
-                className="form-control custom-input"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Ej: Fútbol, Yoga, Natación"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Duración en minutos</label>
-              <input
-                type="number"
-                name="duration"
-                className="form-control custom-input"
-                value={formData.duration}
-                onChange={handleChange}
-                min="1"
-                placeholder="Ej: 60"
-                required
-              />
-            </div>
-
-            <div className="full-field">
-              <label className="form-label">Objetivo</label>
-              <textarea
-                name="objective"
-                className="form-control custom-input"
-                value={formData.objective}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Describe el objetivo principal de este deporte"
-                required
-              />
-            </div>
-
-            <label className="check-card">
-              <input
-                type="checkbox"
-                name="status"
-                checked={formData.status}
-                onChange={handleChange}
-              />
-              <span>Deporte activo</span>
-            </label>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-outline-secondary" onClick={closeForm}>
-                Cancelar
-              </button>
-
-              <button className="btn btn-brand" disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar deporte'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       <div className="cards-list">
         {loading ? (
@@ -345,6 +307,84 @@ function Sports() {
           ))
         )}
       </div>
+
+      <Modal show={showForm} onHide={closeForm} centered size="lg" backdrop="static">
+        <Modal.Header closeButton={!saving}>
+          <Modal.Title>{editingSport ? 'Editar deporte' : 'Crear deporte'}</Modal.Title>
+        </Modal.Header>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <Modal.Body>
+            <p className="modal-helper-text">
+              {editingSport
+                ? 'Modifica la información del deporte seleccionado.'
+                : 'Completa los datos para agregar una nueva disciplina.'}
+            </p>
+
+            <div className="grid-form">
+              <div>
+                <label className="form-label">Nombre del deporte</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-control custom-input"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Ej: Fútbol, Yoga, Natación"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Duración en minutos</label>
+                <input
+                  type="number"
+                  name="duration"
+                  className="form-control custom-input"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  min="1"
+                  placeholder="Ej: 60"
+                  required
+                />
+              </div>
+
+              <div className="full-field">
+                <label className="form-label">Objetivo</label>
+                <textarea
+                  name="objective"
+                  className="form-control custom-input"
+                  value={formData.objective}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Describe el objetivo principal de este deporte"
+                  required
+                />
+              </div>
+
+              <label className="check-card">
+                <input
+                  type="checkbox"
+                  name="status"
+                  checked={formData.status}
+                  onChange={handleChange}
+                />
+                <span>Deporte activo</span>
+              </label>
+            </div>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <button type="button" className="btn btn-outline-secondary" onClick={closeForm} disabled={saving}>
+              Cancelar
+            </button>
+
+            <button type="submit" className="btn btn-brand" disabled={saving}>
+              {saving ? 'Guardando...' : editingSport ? 'Actualizar deporte' : 'Guardar deporte'}
+            </button>
+          </Modal.Footer>
+        </form>
+      </Modal>
     </section>
   )
 }

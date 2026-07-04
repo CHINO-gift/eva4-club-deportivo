@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Modal } from 'react-bootstrap'
 import Swal from 'sweetalert2'
 import api from '../../api/api'
 
@@ -19,6 +20,16 @@ function Users() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const showError = (error, fallbackMessage) => {
+    Swal.fire({
+      title: 'Error',
+      text: error.response?.data?.message || fallbackMessage,
+      icon: 'error',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#4f46e5'
+    })
+  }
 
   const loadUsers = async () => {
     setLoading(true)
@@ -69,19 +80,76 @@ function Users() {
   }
 
   const closeForm = () => {
+    if (saving) {
+      return
+    }
+
     setShowForm(false)
     setEditingUser(null)
     setFormData(emptyForm)
   }
 
+  const validateForm = () => {
+    if (formData.full_name.trim().length < 3) {
+      Swal.fire({
+        title: 'Nombre inválido',
+        text: 'El nombre debe tener al menos 3 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (!formData.email.includes('@')) {
+      Swal.fire({
+        title: 'Correo inválido',
+        text: 'Debes ingresar un correo electrónico válido.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (!editingUser && formData.password.trim().length < 8) {
+      Swal.fire({
+        title: 'Contraseña inválida',
+        text: 'La contraseña debe tener al menos 8 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (editingUser && formData.password.trim() && formData.password.trim().length < 8) {
+      Swal.fire({
+        title: 'Contraseña inválida',
+        text: 'Si cambias la contraseña, debe tener al menos 8 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
     setSaving(true)
     setError('')
 
     const payload = {
-      full_name: formData.full_name,
-      email: formData.email,
+      full_name: formData.full_name.trim(),
+      email: formData.email.trim(),
       role: formData.role,
       birth_date: formData.birth_date || null,
       must_change_password: formData.must_change_password,
@@ -106,10 +174,7 @@ function Users() {
           confirmButtonColor: '#4f46e5'
         })
       } else {
-        await api.post('/users', {
-          ...payload,
-          password: formData.password
-        })
+        await api.post('/users', payload)
 
         await Swal.fire({
           title: 'Usuario creado',
@@ -123,13 +188,7 @@ function Users() {
       closeForm()
       await loadUsers()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo guardar el usuario',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo guardar el usuario')
     } finally {
       setSaving(false)
     }
@@ -166,13 +225,7 @@ function Users() {
 
       await loadUsers()
     } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo eliminar el usuario',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#4f46e5'
-      })
+      showError(error, 'No se pudo eliminar el usuario')
     }
   }
 
@@ -191,105 +244,6 @@ function Users() {
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
-
-      {showForm && (
-        <div className="form-panel">
-          <div className="form-panel-header">
-            <div>
-              <h2>{editingUser ? 'Editar usuario' : 'Crear usuario'}</h2>
-              <p>{editingUser ? 'Modifica los datos del usuario seleccionado.' : 'Completa los datos para registrar un nuevo usuario.'}</p>
-            </div>
-
-            <button className="btn btn-outline-secondary" onClick={closeForm}>
-              Cerrar
-            </button>
-          </div>
-
-          <form className="grid-form" onSubmit={handleSubmit}>
-            <div>
-              <label className="form-label">Nombre completo</label>
-              <input
-                type="text"
-                name="full_name"
-                className="form-control custom-input"
-                value={formData.full_name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Correo electrónico</label>
-              <input
-                type="email"
-                name="email"
-                className="form-control custom-input"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Contraseña</label>
-              <input
-                type="password"
-                name="password"
-                className="form-control custom-input"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder={editingUser ? 'Dejar vacío para no cambiar' : 'Mínimo 8 caracteres'}
-                required={!editingUser}
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Rol</label>
-              <select
-                name="role"
-                className="form-select custom-input"
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <option value="user">Usuario</option>
-                <option value="coach">Coach</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label">Fecha de nacimiento</label>
-              <input
-                type="date"
-                name="birth_date"
-                className="form-control custom-input"
-                value={formData.birth_date}
-                onChange={handleChange}
-              />
-            </div>
-
-            <label className="check-card">
-              <input
-                type="checkbox"
-                name="must_change_password"
-                checked={formData.must_change_password}
-                onChange={handleChange}
-              />
-              <span>Solicitar cambio de contraseña</span>
-            </label>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-outline-secondary" onClick={closeForm}>
-                Cancelar
-              </button>
-
-              <button className="btn btn-brand" disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar usuario'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       <div className="table-card">
         {loading ? (
@@ -340,6 +294,106 @@ function Users() {
           </div>
         )}
       </div>
+
+      <Modal show={showForm} onHide={closeForm} centered size="xl" backdrop="static">
+        <Modal.Header closeButton={!saving}>
+          <Modal.Title>{editingUser ? 'Editar usuario' : 'Crear usuario'}</Modal.Title>
+        </Modal.Header>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <Modal.Body>
+            <p className="modal-helper-text">
+              {editingUser
+                ? 'Modifica los datos del usuario seleccionado.'
+                : 'Completa los datos para registrar un nuevo usuario.'}
+            </p>
+
+            <div className="grid-form">
+              <div>
+                <label className="form-label">Nombre completo</label>
+                <input
+                  type="text"
+                  name="full_name"
+                  className="form-control custom-input"
+                  value={formData.full_name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Correo electrónico</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-control custom-input"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Contraseña</label>
+                <input
+                  type="password"
+                  name="password"
+                  className="form-control custom-input"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder={editingUser ? 'Dejar vacío para no cambiar' : 'Mínimo 8 caracteres'}
+                  required={!editingUser}
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Rol</label>
+                <select
+                  name="role"
+                  className="form-select custom-input"
+                  value={formData.role}
+                  onChange={handleChange}
+                >
+                  <option value="user">Usuario</option>
+                  <option value="coach">Coach</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label">Fecha de nacimiento</label>
+                <input
+                  type="date"
+                  name="birth_date"
+                  className="form-control custom-input"
+                  value={formData.birth_date}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <label className="check-card">
+                <input
+                  type="checkbox"
+                  name="must_change_password"
+                  checked={formData.must_change_password}
+                  onChange={handleChange}
+                />
+                <span>Solicitar cambio de contraseña</span>
+              </label>
+            </div>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <button type="button" className="btn btn-outline-secondary" onClick={closeForm} disabled={saving}>
+              Cancelar
+            </button>
+
+            <button type="submit" className="btn btn-brand" disabled={saving}>
+              {saving ? 'Guardando...' : editingUser ? 'Actualizar usuario' : 'Guardar usuario'}
+            </button>
+          </Modal.Footer>
+        </form>
+      </Modal>
     </section>
   )
 }
