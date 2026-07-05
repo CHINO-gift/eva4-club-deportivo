@@ -19,7 +19,7 @@ https://github.com/CHINO-gift/eva4-club-deportivo
 Enlace AWS:
 
 ```txt
-PENDIENTE_AGREGAR_LINK_AWS
+http://3.80.111.82
 ```
 
 ## Integrantes del equipo
