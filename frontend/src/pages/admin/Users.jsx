@@ -21,6 +21,9 @@ function Users() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const today = new Date().toISOString().split('T')[0]
+  const minBirthDate = '1900-01-01'
+
   const showError = (error, fallbackMessage) => {
     Swal.fire({
       title: 'Error',
@@ -29,6 +32,14 @@ function Users() {
       confirmButtonText: 'Aceptar',
       confirmButtonColor: '#4f46e5'
     })
+  }
+
+  const formatDateForInput = (dateValue) => {
+    if (!dateValue) {
+      return ''
+    }
+
+    return String(dateValue).split('T')[0]
   }
 
   const loadUsers = async () => {
@@ -72,7 +83,7 @@ function Users() {
       email: user.email || '',
       password: '',
       role: user.role || 'user',
-      birth_date: user.birth_date || '',
+      birth_date: formatDateForInput(user.birth_date),
       must_change_password: Boolean(user.must_change_password)
     })
     setShowForm(true)
@@ -94,21 +105,24 @@ function Users() {
       return false
     }
 
-    const selectedDate = new Date(`${dateValue}T00:00:00`)
-    const today = new Date()
+    return dateValue > today
+  }
 
-    today.setHours(0, 0, 0, 0)
+  const isTooOldDate = (dateValue) => {
+    if (!dateValue) {
+      return false
+    }
 
-    return selectedDate > today
+    return dateValue < minBirthDate
   }
 
   const getAge = (dateValue) => {
     const birthDate = new Date(`${dateValue}T00:00:00`)
-    const today = new Date()
+    const currentDate = new Date()
 
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDifference = today.getMonth() - birthDate.getMonth()
-    const dayDifference = today.getDate() - birthDate.getDate()
+    let age = currentDate.getFullYear() - birthDate.getFullYear()
+    const monthDifference = currentDate.getMonth() - birthDate.getMonth()
+    const dayDifference = currentDate.getDate() - birthDate.getDate()
 
     if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
       age -= 1
@@ -155,6 +169,17 @@ function Users() {
       Swal.fire({
         title: 'Contraseña inválida',
         text: 'Si cambias la contraseña, debe tener al menos 8 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.birth_date && isTooOldDate(formData.birth_date)) {
+      Swal.fire({
+        title: 'Fecha inválida',
+        text: 'La fecha de nacimiento no puede ser anterior al año 1900.',
         icon: 'warning',
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
@@ -344,7 +369,7 @@ function Users() {
                         {user.role}
                       </span>
                     </td>
-                    <td>{user.birth_date || 'Sin fecha'}</td>
+                    <td>{formatDateForInput(user.birth_date) || 'Sin fecha'}</td>
                     <td>
                       <div className="table-actions">
                         <button
@@ -445,7 +470,8 @@ function Users() {
                   className="form-control custom-input"
                   value={formData.birth_date}
                   onChange={handleChange}
-                  max={new Date().toISOString().split('T')[0]}
+                  min={minBirthDate}
+                  max={today}
                 />
               </div>
 

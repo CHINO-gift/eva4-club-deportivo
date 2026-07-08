@@ -36,6 +36,7 @@ function Profile() {
   const [loading, setLoading] = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
+  const minBirthDate = '1900-01-01'
 
   const isFutureDate = (dateValue) => {
     const selectedDate = new Date(dateValue)
@@ -45,6 +46,10 @@ function Profile() {
     currentDate.setHours(0, 0, 0, 0)
 
     return selectedDate > currentDate
+  }
+
+  const isTooOldDate = (dateValue) => {
+    return dateValue < minBirthDate
   }
 
   const getAge = (dateValue) => {
@@ -76,10 +81,10 @@ function Profile() {
       return false
     }
 
-    if (!formData.email.trim()) {
+    if (formData.birth_date && isTooOldDate(formData.birth_date)) {
       Swal.fire({
-        title: 'Correo requerido',
-        text: 'Debes ingresar un correo electrónico.',
+        title: 'Fecha inválida',
+        text: 'La fecha de nacimiento no puede ser anterior al año 1900.',
         icon: 'warning',
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
@@ -145,7 +150,6 @@ function Profile() {
     try {
       await updateProfile({
         full_name: formData.full_name.trim(),
-        email: formData.email.trim(),
         birth_date: formData.birth_date || null,
         metadata: user?.metadata || { sports: [] }
       })
@@ -207,9 +211,12 @@ function Profile() {
             name="email"
             className="form-control custom-input"
             value={formData.email}
-            onChange={handleChange}
-            required
+            disabled
+            readOnly
           />
+          <small className="text-muted">
+            El correo se muestra solo como información para evitar duplicados.
+          </small>
         </div>
 
         <div>
@@ -220,6 +227,7 @@ function Profile() {
             className="form-control custom-input"
             value={formData.birth_date}
             onChange={handleChange}
+            min={minBirthDate}
             max={today}
           />
         </div>
