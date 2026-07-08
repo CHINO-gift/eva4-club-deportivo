@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Swal from 'sweetalert2'
 import { useAuth } from '../auth/AuthContext'
 import adminImage from '../assets/admin.png'
 import coachImage from '../assets/coach.png'
@@ -34,12 +35,89 @@ function Profile() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const today = new Date().toISOString().split('T')[0]
+
+  const isFutureDate = (dateValue) => {
+    const selectedDate = new Date(dateValue)
+    const currentDate = new Date()
+
+    selectedDate.setHours(0, 0, 0, 0)
+    currentDate.setHours(0, 0, 0, 0)
+
+    return selectedDate > currentDate
+  }
+
+  const getAge = (dateValue) => {
+    const birthDate = new Date(dateValue)
+    const currentDate = new Date()
+
+    let age = currentDate.getFullYear() - birthDate.getFullYear()
+    const monthDifference = currentDate.getMonth() - birthDate.getMonth()
+
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && currentDate.getDate() < birthDate.getDate())
+    ) {
+      age -= 1
+    }
+
+    return age
+  }
+
+  const validateForm = () => {
+    if (formData.full_name.trim().length < 3) {
+      Swal.fire({
+        title: 'Nombre inválido',
+        text: 'El nombre completo debe tener al menos 3 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (!formData.email.trim()) {
+      Swal.fire({
+        title: 'Correo requerido',
+        text: 'Debes ingresar un correo electrónico.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.birth_date && isFutureDate(formData.birth_date)) {
+      Swal.fire({
+        title: 'Fecha inválida',
+        text: 'La fecha de nacimiento no puede ser futura.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.birth_date && getAge(formData.birth_date) < 12) {
+      Swal.fire({
+        title: 'Edad no permitida',
+        text: 'El usuario debe tener al menos 12 años.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    return true
+  }
+
   useEffect(() => {
     if (user) {
       setFormData({
         full_name: user.full_name || '',
         email: user.email || '',
-        birth_date: user.birth_date || ''
+        birth_date: user.birth_date ? String(user.birth_date).split('T')[0] : ''
       })
     }
   }, [user])
@@ -57,17 +135,30 @@ function Profile() {
     event.preventDefault()
     setMessage('')
     setError('')
+
+    if (!validateForm()) {
+      return
+    }
+
     setLoading(true)
 
     try {
       await updateProfile({
-        full_name: formData.full_name,
-        email: formData.email,
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim(),
         birth_date: formData.birth_date || null,
         metadata: user?.metadata || { sports: [] }
       })
 
       setMessage('Perfil actualizado correctamente')
+
+      await Swal.fire({
+        title: 'Perfil actualizado',
+        text: 'Tus datos fueron guardados correctamente.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
     } catch (error) {
       setError(error.response?.data?.message || 'No se pudo actualizar el perfil')
     } finally {
@@ -96,7 +187,7 @@ function Profile() {
       {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <form className="profile-form improved-profile-form" onSubmit={handleSubmit}>
+      <form className="profile-form improved-profile-form" onSubmit={handleSubmit} noValidate>
         <div>
           <label className="form-label">Nombre completo</label>
           <input
@@ -129,6 +220,7 @@ function Profile() {
             className="form-control custom-input"
             value={formData.birth_date}
             onChange={handleChange}
+            max={today}
           />
         </div>
 
@@ -137,7 +229,7 @@ function Profile() {
           <strong>{user?.role}</strong>
         </div>
 
-        <button className="btn btn-brand" disabled={loading}>
+        <button type="submit" className="btn btn-brand" disabled={loading}>
           {loading ? 'Guardando...' : 'Guardar cambios'}
         </button>
       </form>

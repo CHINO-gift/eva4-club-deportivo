@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import Swal from 'sweetalert2'
 import { useAuth } from '../../auth/AuthContext'
 
 function Register() {
@@ -17,6 +18,94 @@ function Register() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const today = new Date().toISOString().split('T')[0]
+
+  const isFutureDate = (dateValue) => {
+    const selectedDate = new Date(dateValue)
+    const currentDate = new Date()
+
+    selectedDate.setHours(0, 0, 0, 0)
+    currentDate.setHours(0, 0, 0, 0)
+
+    return selectedDate > currentDate
+  }
+
+  const getAge = (dateValue) => {
+    const birthDate = new Date(dateValue)
+    const currentDate = new Date()
+
+    let age = currentDate.getFullYear() - birthDate.getFullYear()
+    const monthDifference = currentDate.getMonth() - birthDate.getMonth()
+
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && currentDate.getDate() < birthDate.getDate())
+    ) {
+      age -= 1
+    }
+
+    return age
+  }
+
+  const validateForm = () => {
+    if (formData.full_name.trim().length < 3) {
+      Swal.fire({
+        title: 'Nombre inválido',
+        text: 'El nombre completo debe tener al menos 3 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (!formData.email.trim()) {
+      Swal.fire({
+        title: 'Correo requerido',
+        text: 'Debes ingresar un correo electrónico.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.birth_date && isFutureDate(formData.birth_date)) {
+      Swal.fire({
+        title: 'Fecha inválida',
+        text: 'La fecha de nacimiento no puede ser futura.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.birth_date && getAge(formData.birth_date) < 12) {
+      Swal.fire({
+        title: 'Edad no permitida',
+        text: 'El usuario debe tener al menos 12 años.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.password.length < 8) {
+      Swal.fire({
+        title: 'Contraseña inválida',
+        text: 'La contraseña debe tener al menos 8 caracteres.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleChange = (event) => {
     const { name, value } = event.target
 
@@ -30,12 +119,17 @@ function Register() {
     event.preventDefault()
     setError('')
     setSuccess('')
+
+    if (!validateForm()) {
+      return
+    }
+
     setLoading(true)
 
     try {
       await register({
-        full_name: formData.full_name,
-        email: formData.email,
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim(),
         birth_date: formData.birth_date || null,
         password: formData.password,
         metadata: {
@@ -44,9 +138,16 @@ function Register() {
       })
 
       setSuccess('Cuenta creada correctamente. Serás enviado al login.')
-      setTimeout(() => {
-        navigate('/login')
-      }, 1300)
+
+      await Swal.fire({
+        title: 'Cuenta creada',
+        text: 'Tu cuenta fue creada correctamente. Ahora puedes iniciar sesión.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+
+      navigate('/login')
     } catch (error) {
       setError(error.response?.data?.message || 'No se pudo crear la cuenta')
     } finally {
@@ -64,7 +165,7 @@ function Register() {
           {error && <div className="alert alert-danger">{error}</div>}
           {success && <div className="alert alert-success">{success}</div>}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="mb-3">
               <label className="form-label">Nombre completo</label>
               <input
@@ -99,6 +200,7 @@ function Register() {
                 className="form-control custom-input"
                 value={formData.birth_date}
                 onChange={handleChange}
+                max={today}
               />
             </div>
 
@@ -115,7 +217,7 @@ function Register() {
               />
             </div>
 
-            <button className="btn btn-brand w-100" disabled={loading}>
+            <button type="submit" className="btn btn-brand w-100" disabled={loading}>
               {loading ? 'Creando cuenta...' : 'Registrarme'}
             </button>
           </form>
