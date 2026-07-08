@@ -91,24 +91,6 @@ function Rooms() {
     setFormData(emptyForm)
   }
 
-  const resetForm = () => {
-    setShowForm(false)
-    setEditingRoom(null)
-    setFormData(emptyForm)
-  }
-
-  const buildPayload = () => {
-    return {
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      capacity: Number(formData.capacity),
-      location: formData.location.trim() || null,
-      observation: formData.observation.trim() || null,
-      image_url: formData.image_url.trim() || null,
-      status: formData.status
-    }
-  }
-
   const validateForm = () => {
     if (formData.name.trim().length < 3) {
       Swal.fire({
@@ -146,6 +128,16 @@ function Rooms() {
     return true
   }
 
+  const buildPayload = () => ({
+    name: formData.name.trim(),
+    description: formData.description.trim(),
+    capacity: Number(formData.capacity),
+    location: formData.location.trim() || null,
+    observation: formData.observation.trim() || null,
+    image_url: formData.image_url.trim() || null,
+    status: formData.status
+  })
+
   const handleSubmit = async (event) => {
     event.preventDefault()
 
@@ -160,7 +152,17 @@ function Rooms() {
       const payload = buildPayload()
 
       if (editingRoom) {
-        await api.put(`/rooms/${editingRoom.id}`, payload)
+        const response = await api.put(`/rooms/${editingRoom.id}`, payload)
+        const updatedRoom = response.data.data || {
+          ...editingRoom,
+          ...payload
+        }
+
+        setRooms((currentRooms) =>
+          currentRooms.map((room) =>
+            room.id === editingRoom.id ? updatedRoom : room
+          )
+        )
 
         await Swal.fire({
           title: 'Sala actualizada',
@@ -170,7 +172,14 @@ function Rooms() {
           confirmButtonColor: '#4f46e5'
         })
       } else {
-        await api.post('/rooms', payload)
+        const response = await api.post('/rooms', payload)
+        const createdRoom = response.data.data
+
+        if (createdRoom) {
+          setRooms((currentRooms) => [createdRoom, ...currentRooms])
+        } else {
+          await loadRooms()
+        }
 
         await Swal.fire({
           title: 'Sala creada',
@@ -181,8 +190,7 @@ function Rooms() {
         })
       }
 
-      resetForm()
-      await loadRooms()
+      closeForm()
     } catch (error) {
       showError(error, 'No se pudo guardar la sala')
     } finally {
@@ -211,6 +219,10 @@ function Rooms() {
     try {
       await api.delete(`/rooms/${room.id}`)
 
+      setRooms((currentRooms) =>
+        currentRooms.filter((currentRoom) => currentRoom.id !== room.id)
+      )
+
       await Swal.fire({
         title: 'Sala eliminada',
         text: 'La sala fue eliminada correctamente.',
@@ -218,8 +230,6 @@ function Rooms() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadRooms()
     } catch (error) {
       showError(error, 'No se pudo eliminar la sala')
     }
@@ -235,7 +245,7 @@ function Rooms() {
       showCancelButton: true,
       confirmButtonText: room.status ? 'Sí, desactivar' : 'Sí, activar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#6c757d'
     })
 
@@ -256,7 +266,17 @@ function Rooms() {
     }
 
     try {
-      await api.put(`/rooms/${room.id}`, payload)
+      const response = await api.put(`/rooms/${room.id}`, payload)
+      const updatedRoom = response.data.data || {
+        ...room,
+        status: !room.status
+      }
+
+      setRooms((currentRooms) =>
+        currentRooms.map((currentRoom) =>
+          currentRoom.id === room.id ? updatedRoom : currentRoom
+        )
+      )
 
       await Swal.fire({
         title: 'Estado actualizado',
@@ -265,8 +285,6 @@ function Rooms() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadRooms()
     } catch (error) {
       showError(error, 'No se pudo actualizar el estado')
     }
@@ -330,15 +348,27 @@ function Rooms() {
                 </div>
 
                 <div className="room-actions">
-                  <button className="btn btn-sm btn-outline-primary" onClick={() => openEditForm(room)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => openEditForm(room)}
+                  >
                     Editar
                   </button>
 
-                  <button className="btn btn-sm btn-outline-secondary" onClick={() => handleToggleStatus(room)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-warning action-toggle-btn"
+                    onClick={() => handleToggleStatus(room)}
+                  >
                     {room.status ? 'Desactivar' : 'Activar'}
                   </button>
 
-                  <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(room)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => handleDelete(room)}
+                  >
                     Eliminar
                   </button>
                 </div>
@@ -434,7 +464,7 @@ function Rooms() {
                   value={formData.observation}
                   onChange={handleChange}
                   rows="2"
-                  placeholder="Ej: Cuenta con colchonetas, pesas o implementación especial"
+                  placeholder="Ej: Cuenta con implementación especial"
                 />
               </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import api from '../../api/api'
 
@@ -15,16 +16,7 @@ const dayNames = {
 function MyReservations() {
   const [reservations, setReservations] = useState([])
   const [loading, setLoading] = useState(false)
-  const [cancellingId, setCancellingId] = useState(null)
   const [error, setError] = useState('')
-
-  const formatTime = (time) => {
-    if (!time) {
-      return ''
-    }
-
-    return String(time).slice(0, 5)
-  }
 
   const showError = (error, fallbackMessage) => {
     Swal.fire({
@@ -36,16 +28,56 @@ function MyReservations() {
     })
   }
 
-  const getReservationInfo = (reservation) => {
-    const schedule = reservation.classSchedule
-    const sportRoom = schedule?.sportRoom
+  const getSchedule = (reservation) => {
+    return reservation.classSchedule || reservation.class_schedule || reservation.schedule || {}
+  }
 
-    return {
-      schedule,
-      sport: sportRoom?.sport,
-      room: sportRoom?.room,
-      coach: sportRoom?.coach
+  const getSportRoom = (reservation) => {
+    const schedule = getSchedule(reservation)
+    return schedule.sportRoom || schedule.sport_room || {}
+  }
+
+  const getSport = (reservation) => {
+    const sportRoom = getSportRoom(reservation)
+    return sportRoom.sport || {}
+  }
+
+  const getRoom = (reservation) => {
+    const sportRoom = getSportRoom(reservation)
+    return sportRoom.room || {}
+  }
+
+  const getCoach = (reservation) => {
+    const sportRoom = getSportRoom(reservation)
+    return sportRoom.coach || {}
+  }
+
+  const formatTime = (time) => {
+    if (!time) {
+      return 'Sin hora'
     }
+
+    return String(time).slice(0, 5)
+  }
+
+  const getReservationStatus = (status) => {
+    if (!status) {
+      return 'Sin estado'
+    }
+
+    if (status === 'active') {
+      return 'Activa'
+    }
+
+    if (status === 'cancelled' || status === 'canceled') {
+      return 'Cancelada'
+    }
+
+    return status
+  }
+
+  const isReservationActive = (status) => {
+    return status === 'active'
   }
 
   const loadReservations = async () => {
@@ -67,17 +99,17 @@ function MyReservations() {
   }, [])
 
   const handleCancelReservation = async (reservation) => {
-    const info = getReservationInfo(reservation)
-    const sportName = info.sport?.name || 'esta clase'
+    const sport = getSport(reservation)
+    const schedule = getSchedule(reservation)
 
     const result = await Swal.fire({
       title: '¿Cancelar reserva?',
-      text: `Cancelarás tu reserva de ${sportName}. Esta acción no se puede deshacer.`,
+      text: `Se cancelará la reserva de ${sport.name || 'esta clase'} ${dayNames[schedule.day_of_week] || ''} ${formatTime(schedule.start_time)}.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, cancelar reserva',
+      confirmButtonText: 'Sí, cancelar',
       cancelButtonText: 'Volver',
-      confirmButtonColor: '#dc3545',
+      confirmButtonColor: '#dc2626',
       cancelButtonColor: '#6c757d'
     })
 
@@ -85,33 +117,45 @@ function MyReservations() {
       return
     }
 
-    setCancellingId(reservation.id)
+    setError('')
 
     try {
-      await api.patch(`/reservations/${reservation.id}/cancel`)
+      const response = await api.patch(`/reservations/${reservation.id}/cancel`)
+      const updatedReservation = response.data.data || {
+        ...reservation,
+        status: 'cancelled'
+      }
+
+      setReservations((currentReservations) =>
+        currentReservations.map((currentReservation) =>
+          currentReservation.id === reservation.id ? updatedReservation : currentReservation
+        )
+      )
 
       await Swal.fire({
         title: 'Reserva cancelada',
-        text: 'Tu reserva fue cancelada correctamente.',
+        text: 'La reserva fue cancelada correctamente.',
         icon: 'success',
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadReservations()
     } catch (error) {
       showError(error, 'No se pudo cancelar la reserva')
-    } finally {
-      setCancellingId(null)
     }
   }
 
   return (
     <section className="content-card">
-      <div className="section-header">
-        <span className="section-kicker">Flujo usuario</span>
-        <h1>Mis Reservas</h1>
-        <p>Consulta tus reservas activas y cancela las que ya no necesites.</p>
+      <div className="section-header action-header">
+        <div>
+          <span className="section-kicker">Flujo usuario</span>
+          <h1>Mis Reservas</h1>
+          <p>Revisa tus reservas activas, canceladas y crea nuevas reservas.</p>
+        </div>
+
+        <Link to="/user/classes" className="btn btn-brand">
+          Nueva reserva
+        </Link>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -120,64 +164,71 @@ function MyReservations() {
         {loading ? (
           <p className="empty-text">Cargando reservas...</p>
         ) : reservations.length === 0 ? (
-          <p className="empty-text">Todavía no tienes reservas registradas.</p>
+          <div className="empty-state-card">
+            <h2>No tienes reservas todavía</h2>
+            <p>Cuando reserves una clase, aparecerá en esta sección.</p>
+
+            <Link to="/user/classes" className="btn btn-brand mt-3">
+              Crear reserva
+            </Link>
+          </div>
         ) : (
           reservations.map((reservation) => {
-            const info = getReservationInfo(reservation)
-            const isActive = reservation.status === 'active'
+            const schedule = getSchedule(reservation)
+            const sport = getSport(reservation)
+            const room = getRoom(reservation)
+            const coach = getCoach(reservation)
 
             return (
               <article className="reservation-card" key={reservation.id}>
                 <div className="reservation-status-column">
-                  <span className={`reservation-status ${isActive ? 'active' : 'cancelled'}`}>
-                    {isActive ? 'Activa' : 'Cancelada'}
+                  <span className={`reservation-status ${isReservationActive(reservation.status) ? 'active' : 'cancelled'}`}>
+                    {getReservationStatus(reservation.status)}
                   </span>
 
                   <strong>Reserva #{reservation.id}</strong>
                 </div>
 
                 <div className="reservation-main-info">
-                  <h2>{info.sport?.name || 'Sin deporte'}</h2>
-                  <p>{info.sport?.objective || 'Sin objetivo registrado'}</p>
+                  <h2>{sport.name || 'Clase sin deporte'}</h2>
+                  <p>{sport.objective || 'Sin descripción disponible'}</p>
 
                   <div className="reservation-detail-grid">
                     <div>
                       <span>Día</span>
-                      <strong>{dayNames[info.schedule?.day_of_week] || 'Sin día'}</strong>
+                      <strong>{dayNames[schedule.day_of_week] || 'Sin día'}</strong>
                     </div>
 
                     <div>
                       <span>Horario</span>
                       <strong>
-                        {formatTime(info.schedule?.start_time)} - {formatTime(info.schedule?.end_time)}
+                        {formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}
                       </strong>
                     </div>
 
                     <div>
                       <span>Sala</span>
-                      <strong>{info.room?.name || 'Sin sala'}</strong>
+                      <strong>{room.name || 'Sin sala'}</strong>
                     </div>
 
                     <div>
                       <span>Coach</span>
-                      <strong>{info.coach?.full_name || info.coach?.email || 'Sin coach'}</strong>
+                      <strong>{coach.full_name || 'Sin coach'}</strong>
                     </div>
                   </div>
                 </div>
 
                 <div className="reservation-actions">
-                  {isActive ? (
+                  {isReservationActive(reservation.status) ? (
                     <button
+                      type="button"
                       className="btn btn-outline-danger"
                       onClick={() => handleCancelReservation(reservation)}
-                      disabled={cancellingId === reservation.id}
                     >
-                      {cancellingId === reservation.id ? 'Cancelando...' : 'Cancelar reserva'}
+                      Cancelar reserva
                     </button>
                   ) : (
-                    <button className="btn btn-outline-secondary" disabled>
-                      Reserva cancelada
-                    </button>
+                    <span className="empty-mini">Reserva cancelada</span>
                   )}
                 </div>
               </article>

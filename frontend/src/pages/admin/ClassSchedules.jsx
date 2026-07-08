@@ -147,12 +147,6 @@ function ClassSchedules() {
     setFormData(emptyForm)
   }
 
-  const resetForm = () => {
-    setShowForm(false)
-    setEditingSchedule(null)
-    setFormData(emptyForm)
-  }
-
   const validateForm = () => {
     if (!formData.sport_room_id) {
       Swal.fire({
@@ -236,7 +230,17 @@ function ClassSchedules() {
       const payload = buildPayload()
 
       if (editingSchedule) {
-        await api.put(`/class-schedules/${editingSchedule.id}`, payload)
+        const response = await api.put(`/class-schedules/${editingSchedule.id}`, payload)
+        const updatedSchedule = response.data.data || {
+          ...editingSchedule,
+          ...payload
+        }
+
+        setSchedules((currentSchedules) =>
+          currentSchedules.map((schedule) =>
+            schedule.id === editingSchedule.id ? updatedSchedule : schedule
+          )
+        )
 
         await Swal.fire({
           title: 'Horario actualizado',
@@ -246,7 +250,14 @@ function ClassSchedules() {
           confirmButtonColor: '#4f46e5'
         })
       } else {
-        await api.post('/class-schedules', payload)
+        const response = await api.post('/class-schedules', payload)
+        const createdSchedule = response.data.data
+
+        if (createdSchedule) {
+          setSchedules((currentSchedules) => [createdSchedule, ...currentSchedules])
+        } else {
+          await loadInitialData()
+        }
 
         await Swal.fire({
           title: 'Horario creado',
@@ -257,8 +268,7 @@ function ClassSchedules() {
         })
       }
 
-      resetForm()
-      await loadInitialData()
+      closeForm()
     } catch (error) {
       showError(error, 'No se pudo guardar el horario')
     } finally {
@@ -289,6 +299,10 @@ function ClassSchedules() {
     try {
       await api.delete(`/class-schedules/${schedule.id}`)
 
+      setSchedules((currentSchedules) =>
+        currentSchedules.filter((currentSchedule) => currentSchedule.id !== schedule.id)
+      )
+
       await Swal.fire({
         title: 'Horario eliminado',
         text: 'El horario fue eliminado correctamente.',
@@ -296,8 +310,6 @@ function ClassSchedules() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadInitialData()
     } catch (error) {
       showError(error, 'No se pudo eliminar el horario')
     }
@@ -313,7 +325,7 @@ function ClassSchedules() {
       showCancelButton: true,
       confirmButtonText: schedule.status ? 'Sí, desactivar' : 'Sí, activar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#6c757d'
     })
 
@@ -332,7 +344,17 @@ function ClassSchedules() {
     }
 
     try {
-      await api.put(`/class-schedules/${schedule.id}`, payload)
+      const response = await api.put(`/class-schedules/${schedule.id}`, payload)
+      const updatedSchedule = response.data.data || {
+        ...schedule,
+        status: !schedule.status
+      }
+
+      setSchedules((currentSchedules) =>
+        currentSchedules.map((currentSchedule) =>
+          currentSchedule.id === schedule.id ? updatedSchedule : currentSchedule
+        )
+      )
 
       await Swal.fire({
         title: 'Estado actualizado',
@@ -341,8 +363,6 @@ function ClassSchedules() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadInitialData()
     } catch (error) {
       showError(error, 'No se pudo actualizar el estado')
     }
@@ -413,15 +433,27 @@ function ClassSchedules() {
                 </div>
 
                 <div className="schedule-actions">
-                  <button className="btn btn-sm btn-outline-primary" onClick={() => openEditForm(schedule)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => openEditForm(schedule)}
+                  >
                     Editar
                   </button>
 
-                  <button className="btn btn-sm btn-outline-secondary" onClick={() => handleToggleStatus(schedule)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-warning action-toggle-btn"
+                    onClick={() => handleToggleStatus(schedule)}
+                  >
                     {schedule.status ? 'Desactivar' : 'Activar'}
                   </button>
 
-                  <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(schedule)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => handleDelete(schedule)}
+                  >
                     Eliminar
                   </button>
                 </div>

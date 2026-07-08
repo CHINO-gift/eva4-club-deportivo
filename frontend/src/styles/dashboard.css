@@ -2011,3 +2011,41 @@ a {
     width: 100%;
   }
 }
+.action-edit-btn,
+.btn-outline-primary {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.action-edit-btn:hover,
+.btn-outline-primary:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.action-delete-btn,
+.btn-outline-danger {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.action-delete-btn:hover,
+.btn-outline-danger:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.action-toggle-btn,
+.btn-outline-warning {
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.action-toggle-btn:hover,
+.btn-outline-warning:hover {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+  color: #ffffff;
+}

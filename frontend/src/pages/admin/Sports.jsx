@@ -245,7 +245,7 @@ function Sports() {
       showCancelButton: true,
       confirmButtonText: sport.status ? 'Sí, desactivar' : 'Sí, activar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#6c757d'
     })
 
@@ -338,7 +338,7 @@ function Sports() {
 
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-secondary"
+                  className="btn btn-sm btn-outline-warning action-toggle-btn"
                   onClick={() => handleToggleStatus(sport)}
                 >
                   {sport.status ? 'Desactivar' : 'Activar'}

@@ -106,12 +106,6 @@ function SportRooms() {
     setFormData(emptyForm)
   }
 
-  const resetForm = () => {
-    setShowForm(false)
-    setEditingAssignment(null)
-    setFormData(emptyForm)
-  }
-
   const validateForm = () => {
     if (!formData.sport_id) {
       Swal.fire({
@@ -184,7 +178,17 @@ function SportRooms() {
       const payload = buildPayload()
 
       if (editingAssignment) {
-        await api.put(`/sport-rooms/${editingAssignment.id}`, payload)
+        const response = await api.put(`/sport-rooms/${editingAssignment.id}`, payload)
+        const updatedAssignment = response.data.data || {
+          ...editingAssignment,
+          ...payload
+        }
+
+        setAssignments((currentAssignments) =>
+          currentAssignments.map((assignment) =>
+            assignment.id === editingAssignment.id ? updatedAssignment : assignment
+          )
+        )
 
         await Swal.fire({
           title: 'Asignación actualizada',
@@ -194,7 +198,14 @@ function SportRooms() {
           confirmButtonColor: '#4f46e5'
         })
       } else {
-        await api.post('/sport-rooms', payload)
+        const response = await api.post('/sport-rooms', payload)
+        const createdAssignment = response.data.data
+
+        if (createdAssignment) {
+          setAssignments((currentAssignments) => [createdAssignment, ...currentAssignments])
+        } else {
+          await loadInitialData()
+        }
 
         await Swal.fire({
           title: 'Asignación creada',
@@ -205,8 +216,7 @@ function SportRooms() {
         })
       }
 
-      resetForm()
-      await loadInitialData()
+      closeForm()
     } catch (error) {
       showError(error, 'No se pudo guardar la asignación')
     } finally {
@@ -239,6 +249,10 @@ function SportRooms() {
     try {
       await api.delete(`/sport-rooms/${assignment.id}`)
 
+      setAssignments((currentAssignments) =>
+        currentAssignments.filter((currentAssignment) => currentAssignment.id !== assignment.id)
+      )
+
       await Swal.fire({
         title: 'Asignación eliminada',
         text: 'La asignación fue eliminada correctamente.',
@@ -246,8 +260,6 @@ function SportRooms() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadInitialData()
     } catch (error) {
       showError(error, 'No se pudo eliminar la asignación')
     }
@@ -263,7 +275,7 @@ function SportRooms() {
       showCancelButton: true,
       confirmButtonText: assignment.status ? 'Sí, desactivar' : 'Sí, activar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#6c757d'
     })
 
@@ -282,7 +294,17 @@ function SportRooms() {
     }
 
     try {
-      await api.put(`/sport-rooms/${assignment.id}`, payload)
+      const response = await api.put(`/sport-rooms/${assignment.id}`, payload)
+      const updatedAssignment = response.data.data || {
+        ...assignment,
+        status: !assignment.status
+      }
+
+      setAssignments((currentAssignments) =>
+        currentAssignments.map((currentAssignment) =>
+          currentAssignment.id === assignment.id ? updatedAssignment : currentAssignment
+        )
+      )
 
       await Swal.fire({
         title: 'Estado actualizado',
@@ -291,8 +313,6 @@ function SportRooms() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadInitialData()
     } catch (error) {
       showError(error, 'No se pudo actualizar el estado')
     }
@@ -370,15 +390,27 @@ function SportRooms() {
               </div>
 
               <div className="assignment-actions">
-                <button className="btn btn-sm btn-outline-primary" onClick={() => openEditForm(assignment)}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => openEditForm(assignment)}
+                >
                   Editar
                 </button>
 
-                <button className="btn btn-sm btn-outline-secondary" onClick={() => handleToggleStatus(assignment)}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-warning action-toggle-btn"
+                  onClick={() => handleToggleStatus(assignment)}
+                >
                   {assignment.status ? 'Desactivar' : 'Activar'}
                 </button>
 
-                <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(assignment)}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => handleDelete(assignment)}
+                >
                   Eliminar
                 </button>
               </div>
