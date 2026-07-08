@@ -119,6 +119,17 @@ function Sports() {
       return false
     }
 
+    if (Number(formData.duration) > 240) {
+      Swal.fire({
+        title: 'Duración muy larga',
+        text: 'La duración no puede superar los 240 minutos.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
     return true
   }
 
@@ -141,7 +152,17 @@ function Sports() {
 
     try {
       if (editingSport) {
-        await api.put(`/sports/${editingSport.id}`, payload)
+        const response = await api.put(`/sports/${editingSport.id}`, payload)
+        const updatedSport = response.data.data || {
+          ...editingSport,
+          ...payload
+        }
+
+        setSports((currentSports) =>
+          currentSports.map((sport) =>
+            sport.id === editingSport.id ? updatedSport : sport
+          )
+        )
 
         await Swal.fire({
           title: 'Deporte actualizado',
@@ -151,7 +172,14 @@ function Sports() {
           confirmButtonColor: '#4f46e5'
         })
       } else {
-        await api.post('/sports', payload)
+        const response = await api.post('/sports', payload)
+        const createdSport = response.data.data
+
+        if (createdSport) {
+          setSports((currentSports) => [createdSport, ...currentSports])
+        } else {
+          await loadSports()
+        }
 
         await Swal.fire({
           title: 'Deporte creado',
@@ -163,7 +191,6 @@ function Sports() {
       }
 
       closeForm()
-      await loadSports()
     } catch (error) {
       showError(error, 'No se pudo guardar el deporte')
     } finally {
@@ -192,6 +219,10 @@ function Sports() {
     try {
       await api.delete(`/sports/${sport.id}`)
 
+      setSports((currentSports) =>
+        currentSports.filter((currentSport) => currentSport.id !== sport.id)
+      )
+
       await Swal.fire({
         title: 'Deporte eliminado',
         text: 'El deporte fue eliminado correctamente.',
@@ -199,8 +230,6 @@ function Sports() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadSports()
     } catch (error) {
       showError(error, 'No se pudo eliminar el deporte')
     }
@@ -234,7 +263,17 @@ function Sports() {
     }
 
     try {
-      await api.put(`/sports/${sport.id}`, payload)
+      const response = await api.put(`/sports/${sport.id}`, payload)
+      const updatedSport = response.data.data || {
+        ...sport,
+        status: !sport.status
+      }
+
+      setSports((currentSports) =>
+        currentSports.map((currentSport) =>
+          currentSport.id === sport.id ? updatedSport : currentSport
+        )
+      )
 
       await Swal.fire({
         title: 'Estado actualizado',
@@ -243,8 +282,6 @@ function Sports() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadSports()
     } catch (error) {
       showError(error, 'No se pudo actualizar el estado')
     }
@@ -291,15 +328,27 @@ function Sports() {
               </div>
 
               <div className="sport-card-actions">
-                <button className="btn btn-sm btn-outline-primary" onClick={() => openEditForm(sport)}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => openEditForm(sport)}
+                >
                   Editar
                 </button>
 
-                <button className="btn btn-sm btn-outline-secondary" onClick={() => handleToggleStatus(sport)}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => handleToggleStatus(sport)}
+                >
                   {sport.status ? 'Desactivar' : 'Activar'}
                 </button>
 
-                <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(sport)}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => handleDelete(sport)}
+                >
                   Eliminar
                 </button>
               </div>
@@ -344,6 +393,7 @@ function Sports() {
                   value={formData.duration}
                   onChange={handleChange}
                   min="1"
+                  max="240"
                   placeholder="Ej: 60"
                   required
                 />

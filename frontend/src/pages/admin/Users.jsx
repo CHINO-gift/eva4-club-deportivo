@@ -89,6 +89,34 @@ function Users() {
     setFormData(emptyForm)
   }
 
+  const isFutureDate = (dateValue) => {
+    if (!dateValue) {
+      return false
+    }
+
+    const selectedDate = new Date(`${dateValue}T00:00:00`)
+    const today = new Date()
+
+    today.setHours(0, 0, 0, 0)
+
+    return selectedDate > today
+  }
+
+  const getAge = (dateValue) => {
+    const birthDate = new Date(`${dateValue}T00:00:00`)
+    const today = new Date()
+
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDifference = today.getMonth() - birthDate.getMonth()
+    const dayDifference = today.getDate() - birthDate.getDate()
+
+    if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
+      age -= 1
+    }
+
+    return age
+  }
+
   const validateForm = () => {
     if (formData.full_name.trim().length < 3) {
       Swal.fire({
@@ -101,7 +129,7 @@ function Users() {
       return false
     }
 
-    if (!formData.email.includes('@')) {
+    if (!formData.email.includes('@') || !formData.email.includes('.')) {
       Swal.fire({
         title: 'Correo inválido',
         text: 'Debes ingresar un correo electrónico válido.',
@@ -134,6 +162,28 @@ function Users() {
       return false
     }
 
+    if (formData.birth_date && isFutureDate(formData.birth_date)) {
+      Swal.fire({
+        title: 'Fecha inválida',
+        text: 'La fecha de nacimiento no puede ser futura.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
+    if (formData.birth_date && getAge(formData.birth_date) < 12) {
+      Swal.fire({
+        title: 'Edad no permitida',
+        text: 'El usuario debe tener al menos 12 años.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#4f46e5'
+      })
+      return false
+    }
+
     return true
   }
 
@@ -159,12 +209,23 @@ function Users() {
     }
 
     if (formData.password.trim()) {
-      payload.password = formData.password
+      payload.password = formData.password.trim()
     }
 
     try {
       if (editingUser) {
-        await api.put(`/users/${editingUser.id}`, payload)
+        const response = await api.put(`/users/${editingUser.id}`, payload)
+        const updatedUser = response.data.data || {
+          ...editingUser,
+          ...payload,
+          password: undefined
+        }
+
+        setUsers((currentUsers) =>
+          currentUsers.map((user) =>
+            user.id === editingUser.id ? updatedUser : user
+          )
+        )
 
         await Swal.fire({
           title: 'Usuario actualizado',
@@ -174,7 +235,14 @@ function Users() {
           confirmButtonColor: '#4f46e5'
         })
       } else {
-        await api.post('/users', payload)
+        const response = await api.post('/users', payload)
+        const createdUser = response.data.data
+
+        if (createdUser) {
+          setUsers((currentUsers) => [createdUser, ...currentUsers])
+        } else {
+          await loadUsers()
+        }
 
         await Swal.fire({
           title: 'Usuario creado',
@@ -186,7 +254,6 @@ function Users() {
       }
 
       closeForm()
-      await loadUsers()
     } catch (error) {
       showError(error, 'No se pudo guardar el usuario')
     } finally {
@@ -215,6 +282,10 @@ function Users() {
     try {
       await api.delete(`/users/${user.id}`)
 
+      setUsers((currentUsers) =>
+        currentUsers.filter((currentUser) => currentUser.id !== user.id)
+      )
+
       await Swal.fire({
         title: 'Usuario eliminado',
         text: 'El usuario fue eliminado correctamente.',
@@ -222,8 +293,6 @@ function Users() {
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadUsers()
     } catch (error) {
       showError(error, 'No se pudo eliminar el usuario')
     }
@@ -278,11 +347,19 @@ function Users() {
                     <td>{user.birth_date || 'Sin fecha'}</td>
                     <td>
                       <div className="table-actions">
-                        <button className="btn btn-sm btn-outline-primary" onClick={() => openEditForm(user)}>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => openEditForm(user)}
+                        >
                           Editar
                         </button>
 
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(user)}>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleDelete(user)}
+                        >
                           Eliminar
                         </button>
                       </div>
@@ -368,6 +445,7 @@ function Users() {
                   className="form-control custom-input"
                   value={formData.birth_date}
                   onChange={handleChange}
+                  max={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
