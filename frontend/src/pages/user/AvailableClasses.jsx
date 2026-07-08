@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import api from '../../api/api'
 
@@ -14,24 +15,9 @@ const dayNames = {
 
 function AvailableClasses() {
   const [classes, setClasses] = useState([])
-  const [reservations, setReservations] = useState([])
   const [loading, setLoading] = useState(false)
   const [reservingId, setReservingId] = useState(null)
   const [error, setError] = useState('')
-
-  const activeReservationScheduleIds = useMemo(() => {
-    return reservations
-      .filter((reservation) => reservation.status === 'active')
-      .map((reservation) => reservation.class_schedule_id)
-  }, [reservations])
-
-  const formatTime = (time) => {
-    if (!time) {
-      return ''
-    }
-
-    return String(time).slice(0, 5)
-  }
 
   const showError = (error, fallbackMessage) => {
     Swal.fire({
@@ -43,18 +29,60 @@ function AvailableClasses() {
     })
   }
 
-  const loadData = async () => {
+  const getData = (response) => {
+    return response.data.data || []
+  }
+
+  const formatTime = (time) => {
+    if (!time) {
+      return 'Sin hora'
+    }
+
+    return String(time).slice(0, 5)
+  }
+
+  const getSportRoom = (classSchedule) => {
+    return classSchedule.sportRoom || classSchedule.sport_room || {}
+  }
+
+  const getSport = (classSchedule) => {
+    const sportRoom = getSportRoom(classSchedule)
+    return sportRoom.sport || {}
+  }
+
+  const getRoom = (classSchedule) => {
+    const sportRoom = getSportRoom(classSchedule)
+    return sportRoom.room || {}
+  }
+
+  const getCoach = (classSchedule) => {
+    const sportRoom = getSportRoom(classSchedule)
+    return sportRoom.coach || {}
+  }
+
+  const isClassActive = (classSchedule) => {
+    const sportRoom = getSportRoom(classSchedule)
+    const sport = getSport(classSchedule)
+    const room = getRoom(classSchedule)
+    const coach = getCoach(classSchedule)
+
+    return (
+      classSchedule.status !== false &&
+      sportRoom.status !== false &&
+      sport.status !== false &&
+      room.status !== false &&
+      coach.status !== false
+    )
+  }
+
+  const loadClasses = async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [classesResponse, reservationsResponse] = await Promise.all([
-        api.get('/member/classes'),
-        api.get('/reservations/my-reservations')
-      ])
-
-      setClasses(classesResponse.data.data || [])
-      setReservations(reservationsResponse.data.data || [])
+      const response = await api.get('/class-schedules')
+      const activeClasses = getData(response).filter((classSchedule) => isClassActive(classSchedule))
+      setClasses(activeClasses)
     } catch (error) {
       setError(error.response?.data?.message || 'No se pudieron cargar las clases disponibles')
     } finally {
@@ -63,17 +91,23 @@ function AvailableClasses() {
   }
 
   useEffect(() => {
-    loadData()
+    loadClasses()
   }, [])
 
-  const handleReserve = async (classItem, schedule) => {
-    const sportName = classItem.sport?.name || 'clase'
-    const roomName = classItem.room?.name || 'sala'
-    const dayName = dayNames[schedule.day_of_week] || 'día seleccionado'
+  const handleCreateReservation = async (classSchedule) => {
+    const sport = getSport(classSchedule)
+    const room = getRoom(classSchedule)
+    const coach = getCoach(classSchedule)
 
     const result = await Swal.fire({
       title: '¿Crear reserva?',
-      text: `Reservarás ${sportName} en ${roomName}, ${dayName} de ${formatTime(schedule.start_time)} a ${formatTime(schedule.end_time)}.`,
+      html: `
+        <p>Se creará una reserva para:</p>
+        <strong>${sport.name || 'Clase sin deporte'}</strong><br>
+        <span>${dayNames[classSchedule.day_of_week] || 'Sin día'} ${formatTime(classSchedule.start_time)} - ${formatTime(classSchedule.end_time)}</span><br>
+        <span>Sala: ${room.name || 'Sin sala'}</span><br>
+        <span>Coach: ${coach.full_name || 'Sin coach'}</span>
+      `,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, reservar',
@@ -86,22 +120,21 @@ function AvailableClasses() {
       return
     }
 
-    setReservingId(schedule.id)
+    setReservingId(classSchedule.id)
+    setError('')
 
     try {
       await api.post('/reservations', {
-        class_schedule_id: schedule.id
+        class_schedule_id: classSchedule.id
       })
 
       await Swal.fire({
         title: 'Reserva creada',
-        text: 'Tu reserva fue registrada correctamente.',
+        text: 'La reserva fue creada correctamente.',
         icon: 'success',
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#4f46e5'
       })
-
-      await loadData()
     } catch (error) {
       showError(error, 'No se pudo crear la reserva')
     } finally {
@@ -111,97 +144,84 @@ function AvailableClasses() {
 
   return (
     <section className="content-card">
-      <div className="section-header">
-        <span className="section-kicker">Flujo usuario</span>
-        <h1>Clases Disponibles</h1>
-        <p>Revisa las clases activas del club y crea reservas según los horarios disponibles.</p>
+      <div className="section-header action-header">
+        <div>
+          <span className="section-kicker">Flujo usuario</span>
+          <h1>Clases Disponibles</h1>
+          <p>Revisa las clases activas del club y crea una reserva.</p>
+        </div>
+
+        <Link to="/user/reservations" className="btn btn-outline-primary">
+          Ver mis reservas
+        </Link>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="member-classes-grid">
+      <div className="schedules-grid">
         {loading ? (
           <p className="empty-text">Cargando clases disponibles...</p>
         ) : classes.length === 0 ? (
-          <p className="empty-text">No hay clases disponibles por el momento.</p>
+          <p className="empty-text">No hay clases disponibles para reservar.</p>
         ) : (
-          classes.map((classItem) => (
-            <article className="member-class-card" key={classItem.id}>
-              <div className="member-class-top">
-                <span className={`status-pill ${classItem.status ? 'active' : 'inactive'}`}>
-                  {classItem.status ? 'Disponible' : 'No disponible'}
-                </span>
+          classes.map((classSchedule) => {
+            const sport = getSport(classSchedule)
+            const room = getRoom(classSchedule)
+            const coach = getCoach(classSchedule)
 
-                <span className="assignment-id">Clase #{classItem.id}</span>
-              </div>
-
-              <div className="member-class-main">
-                <div>
-                  <span>Deporte</span>
-                  <h2>{classItem.sport?.name || 'Sin deporte'}</h2>
-                  <p>{classItem.sport?.objective || 'Sin objetivo registrado'}</p>
+            return (
+              <article className="schedule-card" key={classSchedule.id}>
+                <div className="schedule-top">
+                  <span className="status-pill active">Disponible</span>
+                  <span className="assignment-id">Clase #{classSchedule.id}</span>
                 </div>
 
-                <div className="member-class-duration">
-                  <strong>{classItem.sport?.duration || 0}</strong>
-                  <span>min</span>
-                </div>
-              </div>
-
-              <div className="member-class-info">
-                <div>
-                  <span>Sala</span>
-                  <strong>{classItem.room?.name || 'Sin sala'}</strong>
-                  <p>{classItem.room?.location || 'Sin ubicación'}</p>
+                <div className="schedule-day">
+                  <span>{dayNames[classSchedule.day_of_week] || 'Sin día'}</span>
+                  <strong>
+                    {formatTime(classSchedule.start_time)} - {formatTime(classSchedule.end_time)}
+                  </strong>
                 </div>
 
-                <div>
-                  <span>Coach</span>
-                  <strong>{classItem.coach?.full_name || classItem.coach?.email || 'Sin coach'}</strong>
-                  <p>Responsable de la clase</p>
+                <div className="schedule-info">
+                  <div>
+                    <span>Deporte</span>
+                    <strong>{sport.name || 'Sin deporte'}</strong>
+                  </div>
+
+                  <div>
+                    <span>Sala</span>
+                    <strong>{room.name || 'Sin sala'}</strong>
+                  </div>
+
+                  <div>
+                    <span>Coach</span>
+                    <strong>{coach.full_name || 'Sin coach'}</strong>
+                  </div>
+
+                  <div>
+                    <span>Capacidad sala</span>
+                    <strong>{room.capacity || 0} cupos</strong>
+                  </div>
                 </div>
 
-                <div>
-                  <span>Capacidad</span>
-                  <strong>{classItem.room?.capacity || 0} cupos</strong>
-                  <p>Capacidad de la sala</p>
+                <div className="schedule-actions">
+                  <button
+                    type="button"
+                    className="btn btn-brand"
+                    disabled={reservingId === classSchedule.id}
+                    onClick={() => handleCreateReservation(classSchedule)}
+                  >
+                    {reservingId === classSchedule.id ? 'Reservando...' : 'Crear reserva'}
+                  </button>
+
+                  <Link to="/user/reservations" className="btn btn-outline-primary">
+                    Mis reservas
+                  </Link>
                 </div>
-              </div>
-
-              <div className="reservation-schedules">
-                <span className="small-title">Horarios disponibles</span>
-
-                {classItem.schedules?.length > 0 ? (
-                  classItem.schedules.map((schedule) => {
-                    const alreadyReserved = activeReservationScheduleIds.includes(schedule.id)
-
-                    return (
-                      <div className="reservation-schedule-row" key={schedule.id}>
-                        <div>
-                          <strong>{dayNames[schedule.day_of_week] || 'Sin día'}</strong>
-                          <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
-                        </div>
-
-                        <button
-                          className={alreadyReserved ? 'btn btn-sm btn-success' : 'btn btn-sm btn-brand'}
-                          onClick={() => handleReserve(classItem, schedule)}
-                          disabled={alreadyReserved || reservingId === schedule.id}
-                        >
-                          {alreadyReserved
-                            ? 'Reservado'
-                            : reservingId === schedule.id
-                              ? 'Reservando...'
-                              : 'Reservar'}
-                        </button>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <p className="empty-mini">Esta clase aún no tiene horarios activos.</p>
-                )}
-              </div>
-            </article>
-          ))
+              </article>
+            )
+          })
         )}
       </div>
     </section>
